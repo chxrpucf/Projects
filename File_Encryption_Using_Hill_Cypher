@@ -1,0 +1,170 @@
+/*
+Encrypting a plaintext file using the Hill cipher
+
+Language: C
+
+To Compile:
+gcc -o pa01 pa01.c
+
+To Execute:
+c -> ./pa01 k1.txt p1.txt
+
+Note:
+All input files are simple 8 bit ASCII input
+All execute commands above have been tested on Eustis
+
+*/
+
+//libs
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+//read in plaintext file
+void readingPlainText(char *file, char *txt, int *size) {
+    FILE *inp = fopen(file, "r");
+    if (inp == NULL) {
+        printf("File is NULL. %s\n", file);
+        exit(1);
+    }
+
+    //initialize index to 0 
+    int index = 0;
+    char ch;
+    while ((ch = fgetc(inp)) != EOF && index < *size - 1) {
+        txt[index++] = ch;
+    }
+
+    //set text reader size
+    *size = index;
+    fclose(inp);
+}
+
+//read key
+int **readKey(char *file, int **key, int *size) {
+    FILE *ink = fopen(file, "r");
+    if (ink == NULL) {
+        printf("File is NULL.%s\n", file);
+        exit(1);
+    }
+
+    //read size
+    fscanf(ink, "%d", size);
+
+    //create array
+    key = (int **)malloc(*size * sizeof(int *));
+    for (int i = 0; i < *size; i++) {
+        key[i] = (int *)malloc(*size * sizeof(int));
+    }
+
+    //read data to matrix
+    for (int i = 0; i < *size; i++) {
+        for (int j = 0; j < *size; j++) {
+            fscanf(ink, "%d", &key[i][j]);
+        }
+    }
+    fclose(ink);
+
+    return key;
+}
+
+//print out text
+void printText(char *txt, char *msg, int size) {
+    printf("%s:\n", txt); 
+    for (int i = 0; i < size; i++) {
+        printf("%c", msg[i]);
+
+        //move to new line after 80 characters 
+        if ((i + 1) % 80 == 0 && i != size - 1) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}
+
+//print out key
+void printKey(int **key, int size) {
+    printf("\n\nKey Matrix:\n\n");
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            printf("%d ", key[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+//convert from uppercase to lowercase also remove special characters/nums 
+void preprocessText(char *text, int *length) {
+    int i, j;
+    for (i = 0, j = 0; text[i]; i++) {
+        if (isalpha(text[i])) {
+            text[j++] = tolower(text[i]);
+        }
+    }
+    text[j] = '\0';
+    *length = j;
+}
+
+//encryption function
+void encrypted(char *txt, int size, int **key, int kSize, char *ctxt) {
+    //preprocess plaintext 
+    preprocessText(txt, &size); 
+
+    int *data = (int *)malloc(kSize * sizeof(int));
+    for (int i = 0; i < size; i += kSize) {
+        //read key size 
+        for (int a = 0; a < kSize && i + a < size; a++) {
+            data[a] = txt[i + a] - 'a';
+        }
+
+        //cipher
+        for (int a = 0; a < kSize && i + a < size; a++) {
+            int total = 0;
+            for (int b = 0; b < kSize; b++) {
+                total += key[a][b] * data[b];
+            }
+            total = total % 26;
+            ctxt[i + a] = 'a' + total;
+        }
+    }
+
+    //null term the ciphertext 
+    ctxt[size] = '\0';
+
+    free(data);
+}
+
+//main
+int main(int argc, char **argv) {
+    char text[10000];
+    char ctext[10000];
+    int **key;
+    int keySize;
+    int size = 10000;
+
+    //alloc memory for text/ciphertext
+    memset(text, 0, sizeof(text));
+    memset(ctext, 0, sizeof(ctext));
+
+    //input
+    key = readKey(argv[1], key, &keySize);
+    readingPlainText(argv[2], text, &size);
+    encrypted(text, size, key, keySize, ctext);
+
+    //output
+    printKey(key, keySize);
+    printf("\n");
+    printText("Plaintext:", text, size);
+    printf("\n");
+    printText("Ciphertext:", ctext, size);
+
+    //free key dynamic memory alloc
+    for (int i = 0; i < keySize; i++) {
+        free(key[i]);
+    }
+    free(key);
+
+    return 0;
+}
+
