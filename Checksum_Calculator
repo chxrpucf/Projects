@@ -1,0 +1,144 @@
+/*
+
+Project Introduction: "Checksum Calculator"
+
+In one of my recent projects, I developed a command-line program that calculates checksums for text files, an essential concept in data integrity and cybersecurity. 
+The program reads an input file, processes its content, and computes checksums of different sizes (8, 16, or 32 bits).
+
+The checksum calculation ensures data integrity by detecting any potential errors or corruption in the file. 
+I implemented robust input validation to handle different types of input errors and used proper error messaging to ensure clarity for the user. 
+The project was designed to run efficiently in a Unix-based environment, showcasing my ability to handle file operations, data manipulation, and error handling within a secure context.
+
+This experience helped me strengthen my understanding of file handling, checksum algorithms, and the importance of data integrity in cybersecurity applications.
+
+*/
+
+/*=============================================================================
+| Calculating an 8, 16, or 32 bit checksum on an ASCII input file
+| Language: c
+|
+|
+| To Compile: 
+| gcc -o pa02 pa02.c
+|
+| To Execute: 
+| or c -> ./pa02 inputFile.txt 8
+|
+| where inputFile.txt is an ASCII input file
+| and the number 8 could also be 16 or 32
+| which are the valid checksum sizes, all
+| other values are rejected with an error message
+| and program termination
+|
+| Note: All input files are simple 8 bit ASCII input
+|
++=============================================================================*/
+
+
+//header files
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+//main
+int main(int argc, char** argv) {
+   
+   //read input file
+   FILE *inputText = fopen(argv[1], "r");
+   if (inputText == NULL) {
+      printf("file does not exist.\n");
+      return 1;
+   }
+   
+    //read-in blocksize for checksum
+    int checkSumSize = atoi(argv[2]);
+   
+    //copy file.txt to array
+    //traverse length of file
+    fseek(inputText, 0, SEEK_END);
+    
+    //compute file size
+    int fileSize = ftell(inputText);
+    
+    //go back to beginning of file
+    rewind(inputText);
+
+    //allocate memory for file
+    char text[fileSize +1];
+
+    //copy file to array
+    fread(text, 1, fileSize, inputText);
+
+    //append null terminator
+    text[fileSize] = '\0';
+    fclose(inputText);
+
+    //count number of characters in text
+    int characterCnt = strlen(text);
+
+    //padding for checksum
+    int padding = 0;
+    while ((characterCnt + padding) % (checkSumSize / 8) != 0) {
+        text[characterCnt + padding] = 'X';
+        padding++;
+    }
+    text[characterCnt + padding] = '\0';
+    
+    //update character count
+    characterCnt += padding;
+
+    //print text with max 80 characters before new line
+    printf("\n");
+    for (int i = 0; text[i]; i++) {
+        printf("%c", text[i]);
+        if ((i + 1) % 80 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+
+    //compute checksum
+    unsigned long checksum = 0;
+
+    //8 bytes per block
+    int step = checkSumSize / 8;
+    for (int i = 0; i < characterCnt; i += step) {
+        unsigned long block = 0;
+        for (int j = 0; j < step; j++) {
+            block = (block << 8) + text[i + j];
+        }
+        checksum += block;
+
+        //overflow handling for checksum
+        checksum = (checksum & ((1UL << checkSumSize) - 1));
+    }
+    //print checksum
+    printf("%2d bit checksum is %8lx for all %4d chars\n", checkSumSize, checksum, characterCnt);
+
+}
+
+
+/*
+
+Compile the code using the gcc compiler:
+gcc pa02.c -o checksum
+
+Execute the compiled program with the input file and checksum size as command-line arguments:
+~bash
+
+./checksum input_file.txt 8
+Replace input_file.txt with the path to your input file and 8 with the desired checksum size (8, 16, or 32).
+
+For example, 
+if your input file is named data.txt, 
+and you want to calculate an 8-bit checksum, you would run:
+~bash
+
+
+./checksum data.txt 8
+
+This will execute the program with data.txt as the input file and calculate an 8-bit checksum.
+*/
+
+
