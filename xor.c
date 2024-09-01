@@ -1,9 +1,17 @@
 /*
 xor.c
 
+An XOR encryption and decryption process using characters read from a text file.
+It reads each character from the file, encrypts it using the XOR operation with a predefined key, 
+and then decrypts it back to the original character. 
+The program prints the cleartext, key, ciphertext, and decrypted text for each character.
+
+To use the program, create a text file named input.txt containing the text you want to encrypt, 
+then compile and run the program to see the results.
 
 */
 
+//headers
 #include <stdio.h>
 #include <stdlib.h>
 
